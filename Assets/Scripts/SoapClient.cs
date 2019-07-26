@@ -194,20 +194,21 @@ namespace VRTX.Net
 
     public class SoapComplexType
     {
-        protected static XNamespace Namespace
-        { get; } = "http://tempuri.org";
-        protected static string ElementName
-        { get; } = "complexTypeName";
-        public static XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         public static XName GetFullyQualifiedElementName<T>() where T : SoapComplexType
         {
             Type t = typeof(T);
-            object value = t.GetProperty("FullQualifiedElementName", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.GetProperty).GetValue(null);
-            if (value != null)
-                return (XName)value;
+            object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
+            if (value.Length > 0)
+            {
+                XmlRootAttribute xmlRootAttr = value[0] as XmlRootAttribute;
+                if (xmlRootAttr != null)
+                {
+                    XNamespace ns = (XNamespace)xmlRootAttr.Namespace;
+                    return XName.Get(xmlRootAttr.ElementName, xmlRootAttr.Namespace);
+                }
+            }
             return string.Empty;
+
         }
     }
 
