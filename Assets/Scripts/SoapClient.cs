@@ -14,12 +14,12 @@ namespace VRTX.Net
 {
     public class SoapClient
     {
-        private XNamespace _xns = "http://schemas.xmlsoap.org/soap/envelope/"; // should never be subject to change
-        private XNamespace _xsi = "http://www.w3.org/2001/XMLSchema-instance"; // should never be subject to change
-        private XNamespace _xsd = "http://www.w3.org/2001/XMLSchema"; // should never be subject to change
-        private XNamespace _xsvc = string.Empty; // "http://thomas-bayer.com/blz/"; // needs to be set for the soap service which should be used
-        private TimeSpan _timeout = new TimeSpan(0, 0, 60);
-        private string _apiURL = string.Empty;
+        protected XNamespace _xns = "http://schemas.xmlsoap.org/soap/envelope/"; // should never be subject to change
+        protected XNamespace _xsi = "http://www.w3.org/2001/XMLSchema-instance"; // should never be subject to change
+        protected XNamespace _xsd = "http://www.w3.org/2001/XMLSchema"; // should never be subject to change
+        protected XNamespace _xsvc = string.Empty; // "http://thomas-bayer.com/blz/"; // needs to be set for the soap service which should be used
+        protected TimeSpan _timeout = new TimeSpan(0, 0, 60);
+        protected string _apiURL = string.Empty;
 
         private HttpClient _httpClient = null;
         protected HttpClient HttpClient
