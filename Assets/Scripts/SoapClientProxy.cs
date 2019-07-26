@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using System.Xml.Serialization;
 using UnityEngine;
 
@@ -23,14 +22,14 @@ namespace VRTX.Net
         // service namespace:
         // http://thomas-bayer.com/blz/
 
-        BLZServiceSoapClient _blzServiceClient = new BLZServiceSoapClient();
-        CalculatorSoapClient _calculatorClient = new CalculatorSoapClient();
+        private BLZServiceSoapClient _blzServiceClient = new BLZServiceSoapClient();
+        private CalculatorSoapClient _calculatorClient = new CalculatorSoapClient();
         // Start is called before the first frame update
         public async void ExecuteBLZRequest()
         {
             Dictionary<string, object> endPointParameters = new Dictionary<string, object>();
             endPointParameters.Add("blz", _input.text);
-            SoapResponse soapResponse = await _blzServiceClient.ProcessRequest(_blzServiceClient.SoapRequest("getBank", endPointParameters));
+            SoapResponse soapResponse = await _blzServiceClient.SendRequest("getBank", endPointParameters);
             if (soapResponse != null)
             {
                 _results.text = soapResponse.ReasonPhrase + Environment.NewLine;
@@ -75,14 +74,6 @@ namespace VRTX.Net
     [XmlRoot(ElementName = "details", Namespace = "http://thomas-bayer.com/blz/")]
     public class GetBankResult : SoapComplexType
     {
-        // mandatory 'new' static properties/values to provide correct full qualified xml element name for the complex type
-        protected static new XNamespace Namespace
-        { get; } = "http://thomas-bayer.com/blz/";
-        protected static new string ElementName
-        { get; } = "details";
-        public static new XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         // optional member fields mapped using XmlElement and other Xml..-attributes
         //  ->  they are deserialized using the SoapResponse.Deserialize method
         [XmlElement("bezeichnung")]
@@ -114,56 +105,26 @@ namespace VRTX.Net
     [XmlRoot(ElementName = "AddResponse", Namespace = "http://tempuri.org/")]
     public class AddResponse : SoapComplexType
     {
-        protected static new XNamespace Namespace
-        { get; } = "http://tempuri.org/";
-        protected static new string ElementName
-        { get; } = "AddResponse";
-        public static new XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         [XmlElement("AddResult")]
         public int Value { get; set; }
     }
     [XmlRoot(ElementName = "SubtractResponse", Namespace = "http://tempuri.org/")]
     public class SubtractResponse : SoapComplexType
     {
-        protected static new XNamespace Namespace
-        { get; } = "http://tempuri.org/";
-        protected static new string ElementName
-        { get; } = "SubtractResponse";
-        public static new XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         [XmlElement("SubtractResult")]
         public int Value { get; set; }
     }
     [XmlRoot(ElementName = "MultiplyResponse", Namespace = "http://tempuri.org/")]
     public class MultiplyResponse : SoapComplexType
     {
-        protected static new XNamespace Namespace
-        { get; } = "http://tempuri.org/";
-        protected static new string ElementName
-        { get; } = "MultiplyResponse";
-        public static new XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         [XmlElement("MultiplyResult")]
         public int Value { get; set; }
     }
     [XmlRoot(ElementName = "DivideResponse", Namespace = "http://tempuri.org/")]
     public class DivideResponse : SoapComplexType
     {
-        protected static new XNamespace Namespace
-        { get; } = "http://tempuri.org/";
-        protected static new string ElementName
-        { get; } = "DivideResponse";
-        public static new XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         [XmlElement("DivideResult")]
         public int Value { get; set; }
     }
-
-
 
 }

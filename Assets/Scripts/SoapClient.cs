@@ -14,12 +14,12 @@ namespace VRTX.Net
 {
     public class SoapClient
     {
-        private XNamespace _xns = "http://schemas.xmlsoap.org/soap/envelope/"; // should never be subject to change
-        private XNamespace _xsi = "http://www.w3.org/2001/XMLSchema-instance"; // should never be subject to change
-        private XNamespace _xsd = "http://www.w3.org/2001/XMLSchema"; // should never be subject to change
-        private XNamespace _xsvc = string.Empty; // "http://thomas-bayer.com/blz/"; // needs to be set for the soap service which should be used
-        private TimeSpan _timeout = new TimeSpan(0, 0, 60);
-        private string _apiURL = string.Empty;
+        protected XNamespace _xns = "http://schemas.xmlsoap.org/soap/envelope/"; // should never be subject to change
+        protected XNamespace _xsi = "http://www.w3.org/2001/XMLSchema-instance"; // should never be subject to change
+        protected XNamespace _xsd = "http://www.w3.org/2001/XMLSchema"; // should never be subject to change
+        protected XNamespace _xsvc = string.Empty; // "http://thomas-bayer.com/blz/"; // needs to be set for the soap service which should be used
+        protected TimeSpan _timeout = new TimeSpan(0, 0, 60);
+        protected string _apiURL = string.Empty;
 
         private HttpClient _httpClient = null;
         protected HttpClient HttpClient
@@ -194,20 +194,21 @@ namespace VRTX.Net
 
     public class SoapComplexType
     {
-        protected static XNamespace Namespace
-        { get; } = "http://tempuri.org";
-        protected static string ElementName
-        { get; } = "complexTypeName";
-        public static XName FullQualifiedElementName
-        { get; } = Namespace + ElementName;
-
         public static XName GetFullyQualifiedElementName<T>() where T : SoapComplexType
         {
             Type t = typeof(T);
-            object value = t.GetProperty("FullQualifiedElementName", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.GetProperty).GetValue(null);
-            if (value != null)
-                return (XName)value;
+            object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
+            if (value.Length > 0)
+            {
+                XmlRootAttribute xmlRootAttr = value[0] as XmlRootAttribute;
+                if (xmlRootAttr != null)
+                {
+                    XNamespace ns = (XNamespace)xmlRootAttr.Namespace;
+                    return XName.Get(xmlRootAttr.ElementName, xmlRootAttr.Namespace);
+                }
+            }
             return string.Empty;
+
         }
     }
 
