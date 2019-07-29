@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace VRTX.Net
 {
-    public class SoapClientProxy : MonoBehaviour
+    public class SoapClientSamples : MonoBehaviour
     {
         [SerializeField()]
         private TMPro.TextMeshProUGUI _results = null;
@@ -27,17 +27,16 @@ namespace VRTX.Net
         // Start is called before the first frame update
         public async void ExecuteBLZRequest()
         {
-            Dictionary<string, object> endPointParameters = new Dictionary<string, object>();
-            endPointParameters.Add("blz", _input.text);
-            SoapResponse soapResponse = await _blzServiceClient.SendRequest("getBank", endPointParameters);
-            if (soapResponse != null)
-            {
-                _results.text = soapResponse.ReasonPhrase + Environment.NewLine;
-                GetBankResult complexType = soapResponse.GetComplexType<GetBankResult>();
+            GetBankRequest request = new GetBankRequest()
+            { BLZ = _input.text };
 
-                _results.text += complexType.Bezeichnung.ToString() + Environment.NewLine;
-                _results.text += complexType.BIC.ToString() + Environment.NewLine;
-                _results.text += complexType.PLZ.ToString() + " " + complexType.Ort.ToString();
+            GetBankResponse response = await _blzServiceClient.RequestAsync<GetBankResponse, GetBankRequest>("getBank", request);
+            if (response != null)
+            {
+                _results.text = "Result:" + Environment.NewLine;
+                _results.text += response.Bezeichnung.ToString() + Environment.NewLine;
+                _results.text += response.BIC.ToString() + Environment.NewLine;
+                _results.text += response.PLZ.ToString() + " " + response.Ort.ToString();
             }
         }
 
@@ -46,13 +45,14 @@ namespace VRTX.Net
             Dictionary<string, object> endPointParameters = new Dictionary<string, object>();
             endPointParameters.Add("intA", UnityEngine.Random.Range(-short.MaxValue, short.MaxValue));
             endPointParameters.Add("intB", UnityEngine.Random.Range(-short.MaxValue, short.MaxValue));
-            SoapResponse soapResponse = await _calculatorClient.SendRequest("Add", endPointParameters);
-            if (soapResponse != null)
+            AddRequest request = new AddRequest()
             {
-                _results.text = soapResponse.ReasonPhrase + Environment.NewLine;
-                AddResponse complexType = soapResponse.GetComplexType<AddResponse>();
-                _results.text += complexType.Value.ToString() + Environment.NewLine;
-            }
+                intA = UnityEngine.Random.Range(-short.MaxValue, short.MaxValue),
+                intB = UnityEngine.Random.Range(-short.MaxValue, short.MaxValue)
+            };
+            AddResponse response = await _calculatorClient.RequestAsync<AddResponse, AddRequest>("Add", request);
+            if (response != null)
+                _results.text = response.Value.ToString() + Environment.NewLine;
         }
 
     }
@@ -72,7 +72,7 @@ namespace VRTX.Net
     /// sample implementation of complexType 'detailsType' for BLZService wsdl service
     /// </summary>
     [XmlRoot(ElementName = "details", Namespace = "http://thomas-bayer.com/blz/")]
-    public class GetBankResult : SoapComplexType
+    public class GetBankResponse : SoapResponseType
     {
         // optional member fields mapped using XmlElement and other Xml..-attributes
         //  ->  they are deserialized using the SoapResponse.Deserialize method
@@ -84,8 +84,15 @@ namespace VRTX.Net
         public string Ort { get; set; }
         [XmlElement("plz")]
         public string PLZ { get; set; }
-
     }
+    [XmlRoot(ElementName = "getBank", Namespace = "http://thomas-bayer.com/blz/")]
+    public class GetBankRequest : SoapRequestType
+    {
+        [XmlElement("blz")]
+        public string BLZ { get; set; }
+    }
+
+
 
 
     public class CalculatorSoapClient : SoapClient
@@ -103,25 +110,34 @@ namespace VRTX.Net
     }
 
     [XmlRoot(ElementName = "AddResponse", Namespace = "http://tempuri.org/")]
-    public class AddResponse : SoapComplexType
+    public class AddResponse : SoapResponseType
     {
         [XmlElement("AddResult")]
         public int Value { get; set; }
     }
+    [XmlRoot(ElementName = "Add", Namespace = "http://tempuri.org/")]
+    public class AddRequest : SoapRequestType
+    {
+        [XmlElement("intA")]
+        public int intA { get; set; }
+        [XmlElement("intB")]
+        public int intB { get; set; }
+    }
+
     [XmlRoot(ElementName = "SubtractResponse", Namespace = "http://tempuri.org/")]
-    public class SubtractResponse : SoapComplexType
+    public class SubtractResponse : SoapResponseType
     {
         [XmlElement("SubtractResult")]
         public int Value { get; set; }
     }
     [XmlRoot(ElementName = "MultiplyResponse", Namespace = "http://tempuri.org/")]
-    public class MultiplyResponse : SoapComplexType
+    public class MultiplyResponse : SoapResponseType
     {
         [XmlElement("MultiplyResult")]
         public int Value { get; set; }
     }
     [XmlRoot(ElementName = "DivideResponse", Namespace = "http://tempuri.org/")]
-    public class DivideResponse : SoapComplexType
+    public class DivideResponse : SoapResponseType
     {
         [XmlElement("DivideResult")]
         public int Value { get; set; }
