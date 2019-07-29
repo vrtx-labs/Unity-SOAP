@@ -42,13 +42,23 @@ namespace VRTX.Net
         }
 
 
-        public XDocument SoapRequest(string endPoint, Dictionary<string, object> endPointParameters)
+        public virtual async Task<T> RequestAsync<T, U>(string endPoint, U request) where T : SoapResponseType where U : SoapRequestType
         {
-            XElement endPointElement = new XElement(_xsvc + endPoint);
-            foreach (string key in endPointParameters.Keys)
-                endPointElement.Add(new XElement(_xsvc + key, endPointParameters[key]));
+            SoapResponse soapResponse = await this.SendRequest(endPoint, request);
+            if (soapResponse != null)
+            {
+                int status = (int)soapResponse.StatusCode;
+                if (status >= 200 && status < 300)
+                {
+                    T response = soapResponse.GetResponseType<T>();
+                    return response;
+                }
+            }
+            return default(T);
+        }
 
-
+        public virtual XDocument SoapRequest<T>(string endPoint, T endPointParameters)
+        {
             XDocument soapRequest = new XDocument(
                 new XDeclaration("1.0", "UTF-8", "no"),
                 new XElement(_xns + "Envelope",
@@ -56,13 +66,13 @@ namespace VRTX.Net
                     new XAttribute(XNamespace.Xmlns + "xsd", _xsd),
                     new XAttribute(XNamespace.Xmlns + "soap", _xns),
                     new XElement(_xns + "Body",
-                        endPointElement
+                        SoapUtilities.Serialize(endPointParameters)
                     )
                 ));
             return soapRequest;
         }
 
-        public async Task<SoapResponse> SendRequest(string endPoint, Dictionary<string, object> endPointParameters)
+        public virtual async Task<SoapResponse> SendRequest<T>(string endPoint, T endPointParameters)
         {
             XDocument soapRequest = this.SoapRequest(endPoint, endPointParameters);
 
@@ -100,42 +110,6 @@ namespace VRTX.Net
             }
         }
 
-        [Obsolete("ProcessRequest() is deprecated, use SendRequest() instead.")]
-        public async Task<SoapResponse> ProcessRequest(XDocument soapRequest, string soapAction = "")
-        {
-            try
-            {
-                HttpRequestMessage request = new HttpRequestMessage()
-                {
-                    RequestUri = new Uri(_apiURL),
-                    Method = HttpMethod.Post
-                };
-
-                request.Content = new StringContent(soapRequest.ToString(), Encoding.UTF8, "text/xml");
-                request.Headers.Clear();
-                this.HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/xml"));
-                request.Content.Headers.ContentType = new MediaTypeHeaderValue("text/xml");
-                request.Headers.Add("SOAPAction", _xsvc.NamespaceName + soapAction); // can this one really be left empty? contained: "http://mynamespace.com/GetStuff";
-
-                HttpResponseMessage response = await this.HttpClient.SendAsync(request);
-                return await SoapResponse.Retrieve(response);
-            }
-            catch (AggregateException ex)
-            {
-                if (ex.InnerException is TaskCanceledException)
-                {
-                    throw ex.InnerException;
-                }
-                else
-                {
-                    throw ex;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
     }
 
 
@@ -152,15 +126,14 @@ namespace VRTX.Net
             XmlDocument = xmlDocument;
         }
 
-        public T GetComplexType<T>() where T : SoapComplexType
+        public T GetResponseType<T>() where T : SoapResponseType
         {
             if (this.XmlDocument != null)
             {
-
-                XName fullQualifiedElementName = SoapComplexType.GetFullyQualifiedElementName<T>();
+                XName fullQualifiedElementName = SoapResponseType.GetFullyQualifiedElementName<T>();
                 //XElement complexTypeElement = this.XmlDocument.Descendants(myns + "details").FirstOrDefault();
                 XElement complexTypeElement = this.XmlDocument.Descendants(fullQualifiedElementName).FirstOrDefault();
-                T result = SoapResponse.Deserialize<T>(complexTypeElement.ToString());
+                T result = SoapUtilities.Deserialize<T>(complexTypeElement.ToString());
                 return result;
             }
             return default(T);
@@ -180,21 +153,30 @@ namespace VRTX.Net
             }
             return result;
         }
-        public static T Deserialize<T>(string xmlStr)
-        {
-            XmlSerializer serializer = new XmlSerializer(typeof(T));
-            T result;
-            using (TextReader reader = new StringReader(xmlStr))
-            {
-                result = (T)serializer.Deserialize(reader);
-            }
-            return result;
-        }
     }
 
-    public class SoapComplexType
+    public class SoapResponseType
     {
-        public static XName GetFullyQualifiedElementName<T>() where T : SoapComplexType
+        public static XName GetFullyQualifiedElementName<T>() where T : SoapResponseType
+        {
+            Type t = typeof(T);
+            object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
+            if (value.Length > 0)
+            {
+                XmlRootAttribute xmlRootAttr = value[0] as XmlRootAttribute;
+                if (xmlRootAttr != null)
+                {
+                    XNamespace ns = (XNamespace)xmlRootAttr.Namespace;
+                    return XName.Get(xmlRootAttr.ElementName, xmlRootAttr.Namespace);
+                }
+            }
+            return string.Empty;
+
+        }
+    }
+    public class SoapRequestType
+    {
+        public static XName GetFullyQualifiedElementName<T>() where T : SoapRequestType
         {
             Type t = typeof(T);
             object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
