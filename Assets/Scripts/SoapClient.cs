@@ -57,7 +57,7 @@ namespace VRTX.Net
             return default(T);
         }
 
-        public virtual XDocument SoapRequest<T>(string endPoint, T endPointParameters)
+        public virtual XDocument SoapRequest<T>(T requestParameters) where T : SoapRequestType
         {
             XDocument soapRequest = new XDocument(
                 new XDeclaration("1.0", "UTF-8", "no"),
@@ -66,15 +66,15 @@ namespace VRTX.Net
                     new XAttribute(XNamespace.Xmlns + "xsd", _xsd),
                     new XAttribute(XNamespace.Xmlns + "soap", _xns),
                     new XElement(_xns + "Body",
-                        SoapUtilities.Serialize(endPointParameters)
+                        SoapUtilities.Serialize(requestParameters)
                     )
                 ));
             return soapRequest;
         }
 
-        public virtual async Task<SoapResponse> SendRequest<T>(string endPoint, T endPointParameters)
+        public virtual async Task<SoapResponse> SendRequest<T>(string endPoint, T requestParameters) where T : SoapRequestType
         {
-            XDocument soapRequest = this.SoapRequest(endPoint, endPointParameters);
+            XDocument soapRequest = this.SoapRequest(requestParameters);
 
             try
             {
