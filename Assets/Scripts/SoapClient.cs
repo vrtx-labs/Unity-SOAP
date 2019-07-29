@@ -138,6 +138,31 @@ namespace VRTX.Net
         }
     }
 
+    public class SoapHelper
+    {
+        public static T Deserialize<T>(string xmlStr)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(T));
+            T result;
+            using (TextReader reader = new StringReader(xmlStr))
+            {
+                result = (T)serializer.Deserialize(reader);
+            }
+            return result;
+        }
+        public static XElement Serialize<T>(T value)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(T));
+
+            StringBuilder sb = new StringBuilder();
+            using (StringWriter writer = new StringWriter(sb))
+            {
+                serializer.Serialize(writer, value);
+            }
+            return XElement.Parse(sb.ToString());
+        }
+    }
+
 
     public class SoapResponse
     {
@@ -152,15 +177,14 @@ namespace VRTX.Net
             XmlDocument = xmlDocument;
         }
 
-        public T GetComplexType<T>() where T : SoapComplexType
+        public T GetResponseType<T>() where T : SoapResponseType
         {
             if (this.XmlDocument != null)
             {
-
-                XName fullQualifiedElementName = SoapComplexType.GetFullyQualifiedElementName<T>();
+                XName fullQualifiedElementName = SoapResponseType.GetFullyQualifiedElementName<T>();
                 //XElement complexTypeElement = this.XmlDocument.Descendants(myns + "details").FirstOrDefault();
                 XElement complexTypeElement = this.XmlDocument.Descendants(fullQualifiedElementName).FirstOrDefault();
-                T result = SoapResponse.Deserialize<T>(complexTypeElement.ToString());
+                T result = SoapHelper.Deserialize<T>(complexTypeElement.ToString());
                 return result;
             }
             return default(T);
@@ -180,21 +204,30 @@ namespace VRTX.Net
             }
             return result;
         }
-        public static T Deserialize<T>(string xmlStr)
-        {
-            XmlSerializer serializer = new XmlSerializer(typeof(T));
-            T result;
-            using (TextReader reader = new StringReader(xmlStr))
-            {
-                result = (T)serializer.Deserialize(reader);
-            }
-            return result;
-        }
     }
 
-    public class SoapComplexType
+    public class SoapResponseType
     {
-        public static XName GetFullyQualifiedElementName<T>() where T : SoapComplexType
+        public static XName GetFullyQualifiedElementName<T>() where T : SoapResponseType
+        {
+            Type t = typeof(T);
+            object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
+            if (value.Length > 0)
+            {
+                XmlRootAttribute xmlRootAttr = value[0] as XmlRootAttribute;
+                if (xmlRootAttr != null)
+                {
+                    XNamespace ns = (XNamespace)xmlRootAttr.Namespace;
+                    return XName.Get(xmlRootAttr.ElementName, xmlRootAttr.Namespace);
+                }
+            }
+            return string.Empty;
+
+        }
+    }
+    public class SoapRequestType
+    {
+        public static XName GetFullyQualifiedElementName<T>() where T : SoapRequestType
         {
             Type t = typeof(T);
             object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
