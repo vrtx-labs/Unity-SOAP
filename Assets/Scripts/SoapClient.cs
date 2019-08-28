@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -8,7 +7,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using System.Xml.Serialization;
 
 namespace VRTX.Net
 {
@@ -44,7 +42,7 @@ namespace VRTX.Net
 
         public virtual async Task<T> RequestAsync<T, U>(string endPoint, U request) where T : SoapResponseType where U : SoapRequestType
         {
-            SoapResponse soapResponse = await this.SendRequest(endPoint, request);
+            SoapOperationResponse soapResponse = await this.SendRequest(endPoint, request);
             if (soapResponse != null)
             {
                 int status = (int)soapResponse.StatusCode;
@@ -57,7 +55,7 @@ namespace VRTX.Net
             return default(T);
         }
 
-        public virtual XDocument SoapRequest<T>(T requestParameters) where T : SoapRequestType
+        protected virtual XDocument SoapRequest<T>(T requestParameters) where T : SoapRequestType
         {
             XDocument soapRequest = new XDocument(
                 new XDeclaration("1.0", "UTF-8", "no"),
@@ -72,7 +70,7 @@ namespace VRTX.Net
             return soapRequest;
         }
 
-        public virtual async Task<SoapResponse> SendRequest<T>(string endPoint, T requestParameters) where T : SoapRequestType
+        protected virtual async Task<SoapOperationResponse> SendRequest<T>(string endPoint, T requestParameters) where T : SoapRequestType
         {
             XDocument soapRequest = this.SoapRequest(requestParameters);
 
@@ -91,7 +89,7 @@ namespace VRTX.Net
                 request.Headers.Add("SOAPAction", _xsvc.NamespaceName + endPoint); // can this one really be left empty? contained: "http://mynamespace.com/GetStuff";
 
                 HttpResponseMessage response = await this.HttpClient.SendAsync(request);
-                return await SoapResponse.Retrieve(response);
+                return await SoapOperationResponse.Retrieve(response);
             }
             catch (AggregateException ex)
             {
@@ -112,13 +110,13 @@ namespace VRTX.Net
 
     }
 
-    public class SoapResponse
+    public class SoapOperationResponse
     {
         public HttpStatusCode StatusCode { get; } = HttpStatusCode.OK;
         public string ReasonPhrase { get; } = string.Empty;
         public XDocument XmlDocument { get; private set; } = null;
 
-        private SoapResponse(HttpStatusCode statusCode, string reasonPhrase, XDocument xmlDocument)
+        private SoapOperationResponse(HttpStatusCode statusCode, string reasonPhrase, XDocument xmlDocument)
         {
             StatusCode = statusCode;
             ReasonPhrase = reasonPhrase;
@@ -138,9 +136,9 @@ namespace VRTX.Net
         }
 
 
-        public static async Task<SoapResponse> Retrieve(HttpResponseMessage response)
+        public static async Task<SoapOperationResponse> Retrieve(HttpResponseMessage response)
         {
-            SoapResponse result = new SoapResponse(response.StatusCode, response.ReasonPhrase, null);
+            SoapOperationResponse result = new SoapOperationResponse(response.StatusCode, response.ReasonPhrase, null);
             if (response.IsSuccessStatusCode)
             {
                 Stream stream = await response.Content.ReadAsStreamAsync();
