@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -8,7 +7,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using System.Xml.Serialization;
 
 namespace VRTX.Net
 {
@@ -57,7 +55,7 @@ namespace VRTX.Net
             return default(T);
         }
 
-        public virtual XDocument SoapRequest<T>(T requestParameters) where T : SoapRequestType
+        protected virtual XDocument SoapRequest<T>(T requestParameters) where T : SoapRequestType
         {
             XDocument soapRequest = new XDocument(
                 new XDeclaration("1.0", "UTF-8", "no"),
@@ -72,7 +70,7 @@ namespace VRTX.Net
             return soapRequest;
         }
 
-        public virtual async Task<SoapResponse> SendRequest<T>(string endPoint, T requestParameters) where T : SoapRequestType
+        protected virtual async Task<SoapResponse> SendRequest<T>(string endPoint, T requestParameters) where T : SoapRequestType
         {
             XDocument soapRequest = this.SoapRequest(requestParameters);
 
