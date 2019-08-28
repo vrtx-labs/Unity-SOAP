@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using UnityEngine;
+using VRTX.Net.Samples.BLZService;
+using VRTX.Net.Samples.Calculator;
 
 namespace VRTX.Net
 {
@@ -30,7 +32,10 @@ namespace VRTX.Net
             GetBankRequest request = new GetBankRequest()
             { BLZ = _input.text };
 
-            GetBankResponse response = await _blzServiceClient.RequestAsync<GetBankResponse, GetBankRequest>("getBank", request);
+            // verbose way of sending a request
+            //GetBankResponse response = await _blzServiceClient.RequestAsync<GetBankResponse, GetBankRequest>("getBank", request);
+            // concise way of sending request using the SoapOperation implementation
+            GetBankResponse response = await GetBank.Execute(_blzServiceClient, request);
             if (response != null)
             {
                 _results.text = "Result:" + Environment.NewLine;
@@ -42,22 +47,56 @@ namespace VRTX.Net
 
         public async void ExecuteCalculatorAddRequest()
         {
-            Dictionary<string, object> endPointParameters = new Dictionary<string, object>();
-            endPointParameters.Add("intA", UnityEngine.Random.Range(-short.MaxValue, short.MaxValue));
-            endPointParameters.Add("intB", UnityEngine.Random.Range(-short.MaxValue, short.MaxValue));
             AddRequest request = new AddRequest()
             {
-                intA = UnityEngine.Random.Range(-short.MaxValue, short.MaxValue),
-                intB = UnityEngine.Random.Range(-short.MaxValue, short.MaxValue)
+                intA = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue),
+                intB = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue)
             };
-            AddResponse response = await _calculatorClient.RequestAsync<AddResponse, AddRequest>("Add", request);
+            //AddResponse response = await _calculatorClient.RequestAsync<AddResponse, AddRequest>("Add", request);
+            AddResponse response = await Add.Execute(_calculatorClient, request);
             if (response != null)
-                _results.text = response.Value.ToString() + Environment.NewLine;
+                _results.text = string.Format("{0} + {1} = {2}", request.intA, request.intB, response.Value) + Environment.NewLine;
+        }
+        public async void ExecuteCalculatorSubtractRequest()
+        {
+            SubtractRequest request = new SubtractRequest()
+            {
+                intA = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue),
+                intB = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue)
+            };
+            SubtractResponse response = await Subtract.Execute(_calculatorClient, request);
+            if (response != null)
+                _results.text = string.Format("{0} - {1} = {2}", request.intA, request.intB, response.Value) + Environment.NewLine;
+        }
+        public async void ExecuteCalculatorMultiplyRequest()
+        {
+            MultiplyRequest request = new MultiplyRequest()
+            {
+                intA = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue),
+                intB = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue)
+            };
+            MultiplyResponse response = await Multiply.Execute(_calculatorClient, request);
+            if (response != null)
+                _results.text = string.Format("{0} * {1} = {2}", request.intA, request.intB, response.Value) + Environment.NewLine;
+        }
+        public async void ExecuteCalculatorDivideRequest()
+        {
+            DivideRequest request = new DivideRequest()
+            {
+                intA = UnityEngine.Random.Range(-byte.MaxValue, byte.MaxValue),
+                intB = UnityEngine.Random.Range(1, byte.MaxValue / 16)
+            };
+            DivideResponse response = await Divide.Execute(_calculatorClient, request);
+            if (response != null)
+                _results.text = string.Format("{0} / {1} = {2}", request.intA, request.intB, response.Value) + Environment.NewLine;
         }
 
     }
 
+}
 
+namespace VRTX.Net.Samples.BLZService
+{
     public class BLZServiceSoapClient : SoapClient
     {
         // soap client implementation for BLZService (public sample wsdl service)
@@ -68,6 +107,11 @@ namespace VRTX.Net
         public BLZServiceSoapClient() : base("http://www.thomas-bayer.com/axis2/services/BLZService", "http://thomas-bayer.com/blz/")
         { }
     }
+    public class GetBank : SoapOperation<GetBankRequest, GetBankResponse, GetBank>
+    {
+        public GetBank() : base("getBank") { }
+    }
+
     /// <summary>
     /// sample implementation of complexType 'detailsType' for BLZService wsdl service
     /// </summary>
@@ -91,9 +135,11 @@ namespace VRTX.Net
         [XmlElement("blz")]
         public string BLZ { get; set; }
     }
+}
 
 
-
+namespace VRTX.Net.Samples.Calculator
+{
 
     public class CalculatorSoapClient : SoapClient
     {
@@ -109,6 +155,12 @@ namespace VRTX.Net
         { }
     }
 
+    #region Add Operation
+    public class Add : SoapOperation<AddRequest, AddResponse, Add>
+    {
+        public Add() : base("Add")
+        { }
+    }
     [XmlRoot(ElementName = "AddResponse", Namespace = "http://tempuri.org/")]
     public class AddResponse : SoapResponseType
     {
@@ -123,12 +175,30 @@ namespace VRTX.Net
         [XmlElement("intB")]
         public int intB { get; set; }
     }
+    #endregion
 
+    #region Subtract Operation
+    public class Subtract : SoapOperation<SubtractRequest, SubtractResponse, Subtract>
+    {
+        public Subtract() : base("Subtract")
+        { }
+    }
     [XmlRoot(ElementName = "SubtractResponse", Namespace = "http://tempuri.org/")]
     public class SubtractResponse : SoapResponseType
     {
         [XmlElement("SubtractResult")]
         public int Value { get; set; }
+    }
+    [XmlRoot(ElementName = "Subtract", Namespace = "http://tempuri.org/")]
+    public class SubtractRequest : AddRequest
+    { }
+    #endregion
+
+    #region Multiply Operation
+    public class Multiply : SoapOperation<MultiplyRequest, MultiplyResponse, Multiply>
+    {
+        public Multiply() : base("Multiply")
+        { }
     }
     [XmlRoot(ElementName = "MultiplyResponse", Namespace = "http://tempuri.org/")]
     public class MultiplyResponse : SoapResponseType
@@ -136,11 +206,25 @@ namespace VRTX.Net
         [XmlElement("MultiplyResult")]
         public int Value { get; set; }
     }
+    [XmlRoot(ElementName = "Multiply", Namespace = "http://tempuri.org/")]
+    public class MultiplyRequest : AddRequest
+    { }
+    #endregion
+
+    #region Divide Operation
+    public class Divide : SoapOperation<DivideRequest, DivideResponse, Divide>
+    {
+        public Divide() : base("Divide")
+        { }
+    }
     [XmlRoot(ElementName = "DivideResponse", Namespace = "http://tempuri.org/")]
     public class DivideResponse : SoapResponseType
     {
         [XmlElement("DivideResult")]
         public int Value { get; set; }
     }
-
+    [XmlRoot(ElementName = "Divide", Namespace = "http://tempuri.org/")]
+    public class DivideRequest : AddRequest
+    { }
+    #endregion
 }

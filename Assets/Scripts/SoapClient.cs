@@ -112,7 +112,6 @@ namespace VRTX.Net
 
     }
 
-
     public class SoapResponse
     {
         public HttpStatusCode StatusCode { get; } = HttpStatusCode.OK;
@@ -131,7 +130,6 @@ namespace VRTX.Net
             if (this.XmlDocument != null)
             {
                 XName fullQualifiedElementName = SoapResponseType.GetFullyQualifiedElementName<T>();
-                //XElement complexTypeElement = this.XmlDocument.Descendants(myns + "details").FirstOrDefault();
                 XElement complexTypeElement = this.XmlDocument.Descendants(fullQualifiedElementName).FirstOrDefault();
                 T result = SoapUtilities.Deserialize<T>(complexTypeElement.ToString());
                 return result;
@@ -154,45 +152,5 @@ namespace VRTX.Net
             return result;
         }
     }
-
-    public class SoapResponseType
-    {
-        public static XName GetFullyQualifiedElementName<T>() where T : SoapResponseType
-        {
-            Type t = typeof(T);
-            object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
-            if (value.Length > 0)
-            {
-                XmlRootAttribute xmlRootAttr = value[0] as XmlRootAttribute;
-                if (xmlRootAttr != null)
-                {
-                    XNamespace ns = (XNamespace)xmlRootAttr.Namespace;
-                    return XName.Get(xmlRootAttr.ElementName, xmlRootAttr.Namespace);
-                }
-            }
-            return string.Empty;
-
-        }
-    }
-    public class SoapRequestType
-    {
-        public static XName GetFullyQualifiedElementName<T>() where T : SoapRequestType
-        {
-            Type t = typeof(T);
-            object[] value = t.GetCustomAttributes(typeof(XmlRootAttribute), true);
-            if (value.Length > 0)
-            {
-                XmlRootAttribute xmlRootAttr = value[0] as XmlRootAttribute;
-                if (xmlRootAttr != null)
-                {
-                    XNamespace ns = (XNamespace)xmlRootAttr.Namespace;
-                    return XName.Get(xmlRootAttr.ElementName, xmlRootAttr.Namespace);
-                }
-            }
-            return string.Empty;
-
-        }
-    }
-
 
 }
