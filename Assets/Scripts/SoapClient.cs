@@ -19,6 +19,24 @@ namespace VRTX.Net
         protected TimeSpan _timeout = new TimeSpan(0, 0, 60);
         protected string _apiURL = string.Empty;
 
+
+        private HttpClientHandler _httpHandler = null;
+        protected HttpClientHandler HttpHandler
+        {
+            get
+            {
+                if (_httpHandler == null)
+                {
+                    _httpHandler = new HttpClientHandler()
+                    {
+                        AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
+                    };
+                }
+                return _httpHandler;
+            }
+        }
+
+
         private HttpClient _httpClient = null;
         protected HttpClient HttpClient
         {
@@ -26,11 +44,15 @@ namespace VRTX.Net
             {
                 if (_httpClient == null)
                 {
-                    _httpClient = new HttpClient(new HttpClientHandler() { AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip }) { Timeout = _timeout };
+                    _httpClient = new HttpClient(this.HttpHandler)
+                    {
+                        Timeout = _timeout,
+                    };
                 }
                 return _httpClient;
             }
         }
+
 
         // ctor
         public SoapClient(string svcApiUrl, XNamespace svcNamespace)
@@ -88,8 +110,10 @@ namespace VRTX.Net
                 request.Content.Headers.ContentType = new MediaTypeHeaderValue("text/xml");
                 request.Headers.Add("SOAPAction", _xsvc.NamespaceName + endPoint); // can this one really be left empty? contained: "http://mynamespace.com/GetStuff";
 
-                HttpResponseMessage response = await this.HttpClient.SendAsync(request);
-                return await SoapOperationResponse.Retrieve(response);
+                using (HttpResponseMessage response = await this.HttpClient.SendAsync(request))
+                {
+                    return await SoapOperationResponse.Retrieve(response);
+                }
             }
             catch (AggregateException ex)
             {
