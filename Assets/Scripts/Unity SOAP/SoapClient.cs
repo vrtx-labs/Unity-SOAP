@@ -12,6 +12,9 @@ namespace VRTX.Net
 {
     public class SoapClient
     {
+        // Further reading:
+        // https://long2know.com/2016/07/consuming-a-soap-service-using-httpclient/
+
         protected XNamespace _xns = "http://schemas.xmlsoap.org/soap/envelope/"; // should never be subject to change
         protected XNamespace _xsi = "http://www.w3.org/2001/XMLSchema-instance"; // should never be subject to change
         protected XNamespace _xsd = "http://www.w3.org/2001/XMLSchema"; // should never be subject to change
@@ -117,18 +120,11 @@ namespace VRTX.Net
             }
             catch (AggregateException ex)
             {
-                if (ex.InnerException is TaskCanceledException)
-                {
-                    throw ex.InnerException;
-                }
-                else
-                {
-                    throw ex;
-                }
+                throw;
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
